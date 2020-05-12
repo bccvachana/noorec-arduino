@@ -12,9 +12,9 @@ const uint8_t pinCE = 7;
 const uint8_t pinCSN = 8;
 RF24 wirelessSPI(pinCE, pinCSN);
 const uint64_t wAddress = 0xB00B1E50C3LL;
-const uint8_t rFChan = 89; //Set channel default (chan 84 is 2.484GHz to 2.489GHz)
-const uint8_t rDelay = 7;  //this is based on 250us increments, 0 is 250us so 7 is 2 ms
-const uint8_t rNum = 5;    //number of retries that will be attempted
+const uint8_t rFChan = 89;
+const uint8_t rDelay = 7;
+const uint8_t rNum = 5;
 
 struct PayLoad
 {
@@ -38,20 +38,24 @@ void setup()
 {
     wirelessSPI.begin();
     wirelessSPI.setChannel(rFChan);
-    wirelessSPI.setRetries(rDelay, rNum);  //if a transmit fails to reach receiver (no ack packet) then this sets retry attempts and delay between retries
-    wirelessSPI.openWritingPipe(wAddress); //open writing or transmit pipe
-    wirelessSPI.stopListening();           //go into transmit mode
+    wirelessSPI.setRetries(rDelay, rNum);
+    wirelessSPI.openWritingPipe(wAddress);
+    wirelessSPI.stopListening();
 
     Serial.begin(9600);
-    heightBefore = 212;
+    heightBefore = 209;
 }
 
 void loop()
 {
+    // payload.heightValue = heightBefore -sonar.ping_cm();
+    // wirelessSPI.write(&payload, sizeof(payload));
+    // delay(1000);
     if (!isHeight)
     {
         heightTemp = heightBefore - sonar.ping_cm();
-        if (heightTemp > 120)
+        Serial.println(heightTemp);
+        if (heightTemp != heightBefore && heightTemp > 120)
         {
             time++;
             heightSum += heightTemp;
@@ -61,32 +65,32 @@ void loop()
             time = 0;
             heightSum = 0;
         }
-        if (time == 3)
+        if (time == 20)
         {
-            height = heightSum / 3;
+            height = heightSum / 20;
             time = 0;
             heightSum = 0;
             isHeight = true;
         }
-        Serial.println(heightTemp);
+        delay(100);
     }
     else
     {
-        Serial.print("...yayyyyy... ");
-        Serial.println(height);
-        time++;
-
         if (time == 2)
         {
+            Serial.print(":::::::::: ");
             payload.heightValue = height;
             wirelessSPI.write(&payload, sizeof(payload));
         }
 
+        Serial.println(height);
+        time++;
+
         if (time == 15)
         {
+            Serial.println("::::::::::");
             isHeight = false;
         }
+        delay(1000);
     }
-
-    delay(1000);
 }

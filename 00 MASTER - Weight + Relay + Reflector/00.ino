@@ -8,10 +8,10 @@
 #define reflectorPin A0
 
 // Weight
-// #define DOUT  3
-// #define CLK  2
-// HX711 scale;
-// float calibration_factor = 20200;
+#define DOUT 3
+#define CLK 2
+HX711 scale;
+float calibration_factor = -21500;
 
 const uint8_t pinCE = 7;
 const uint8_t pinCSN = 8;
@@ -34,7 +34,14 @@ PayLoad payload;
 char input = '0';
 int time = 0;
 String data = "";
+float weightValue;
+float weightTempNew;
+float weightTempOld;
+float weightSum;
+int weightTime;
 int heightValue;
+bool isWeight = false;
+bool isHeight = false;
 float temperatureValue;
 bool isData = false;
 bool isBloodPressure = false;
@@ -52,6 +59,10 @@ void setup()
 	wirelessSPI.startListening();
 	Serial.begin(9600);
 	Serial.println("NooRec Master is online...");
+
+	scale.begin(DOUT, CLK);
+	scale.set_scale(calibration_factor);
+	scale.tare();
 
 	pinMode(relayPin, OUTPUT);
 	pinMode(reflectorPin, INPUT);
@@ -74,28 +85,83 @@ void loop()
 
 	else if (input == '1')
 	{
+		// if (wirelessSPI.available())
+		// {
+		// 	wirelessSPI.read(&payload, sizeof(payload));
+		// 	if (payload.channel == 1)
+		// 	{
+		// 		if (payload.heightValue)
+		// 		{
+		// 			Serial.println(payload.heightValue);
+		// 		}
+		// 	}
+		// }
+		// delay(1000);
+
 		if (!isData)
 		{
-			if (wirelessSPI.available())
+			if (!isHeight)
 			{
-				wirelessSPI.read(&payload, sizeof(payload));
-				if (payload.channel == 1)
+				if (wirelessSPI.available())
 				{
-					if (payload.heightValue > 120)
+					wirelessSPI.read(&payload, sizeof(payload));
+					if (payload.channel == 1)
 					{
-						heightValue = payload.heightValue;
-						isData = true;
+						if (payload.heightValue)
+						{
+							heightValue = payload.heightValue;
+							isHeight = true;
+						}
 					}
 				}
 			}
+			if (!isWeight)
+			{
+				weightTempNew = scale.get_units();
+
+				if (weightTempNew > 20 && abs(weightTempNew - weightTempOld) < 0.3)
+				{
+					weightSum += weightTempNew;
+					weightTime++;
+				}
+				else
+				{
+					weightSum = 0;
+					weightTime = 0;
+				}
+
+				if (weightTime == 30)
+				{
+					weightValue = weightSum / 30;
+					weightSum = 0;
+					weightTime = 0;
+					isWeight = true;
+				}
+
+				weightTempOld = weightTempNew;
+			}
+
+			if (isWeight && isHeight)
+			{
+				isData = true;
+			}
+
 			data = "loading,weightHeight";
+
+			delay(100);
+			time++;
+			if (time == 10)
+			{
+				Serial.println(data);
+				time = 0;
+			}
 		}
 		else
 		{
-			data = "done,weightHeight," + String(heightValue);
+			data = "done,weightHeight," + String(weightValue, 1) + "," + String(heightValue);
+			delay(1000);
+			Serial.println(data);
 		}
-		Serial.println(data);
-		delay(1000);
 	}
 
 	else if (input == '2')
@@ -119,7 +185,7 @@ void loop()
 		}
 		else
 		{
-			data = "done,temperature," + String(temperatureValue);
+			data = "done,temperature," + String(temperatureValue, 1);
 		}
 		time++;
 		Serial.println(data);
@@ -130,19 +196,19 @@ void loop()
 	{
 		if (!isData)
 		{
-			if (analogRead(reflectorPin) < 300 && !isBloodPressure)
+			if (analogRead(reflectorPin) < 250 && !isBloodPressure)
 			{
 				time++;
 			}
-			if (analogRead(reflectorPin) > 300 && !isBloodPressure)
+			if (analogRead(reflectorPin) > 250 && !isBloodPressure)
 			{
 				time = 0;
 			}
-			if (analogRead(reflectorPin) < 300 && !isBloodPressure && time > 10)
+			if (analogRead(reflectorPin) < 250 && !isBloodPressure && time > 10)
 			{
 				isBloodPressure = true;
 			}
-			if (analogRead(reflectorPin) > 300 && isBloodPressure)
+			if (analogRead(reflectorPin) > 250 && isBloodPressure)
 			{
 				isBloodPressure = false;
 				isBloodPressureReceive = true;
@@ -217,7 +283,14 @@ void reset()
 	time = 0;
 	data = "";
 	isData = false;
+	weightValue = 0;
+	weightTempNew = 0;
+	weightTempOld = 0;
+	weightSum = 0;
+	weightTime = 0;
 	heightValue = 0;
+	isWeight = false;
+	isHeight = false;
 	temperatureValue = 0;
 	isBloodPressureReceive = false;
 	digitalWrite(relayPin, HIGH);

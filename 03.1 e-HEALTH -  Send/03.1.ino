@@ -34,6 +34,13 @@ void setup()
   digitalWrite(4, LOW);
 
   Serial.begin(9600);
+
+  delay(3000);
+  eHealth.initPulsioximeter();
+  PCintPort::attachInterrupt(6, readPulsioximeter, RISING);
+  ET.begin(details(data), &Serial);
+  digitalWrite(relayPin, LOW);
+  delay(1000);
 }
 
 void loop()
@@ -47,28 +54,16 @@ void loop()
       rateOxygen = true;
     }
   }
-
-  if (time == 3)
-  {
-    eHealth.initPulsioximeter();
-    PCintPort::attachInterrupt(6, readPulsioximeter, RISING);
-    ET.begin(details(data), &Serial);
-    digitalWrite(relayPin, LOW);
-    delay(1000);
-  }
-
-  if (time > 2)
-  {
-    ET.sendData();
-  }
+  ET.sendData();
 
   delay(1000);
-  time++;
 }
 
 void readPulsioximeter()
 {
+
   cont++;
+
   if (cont == 50)
   {
     eHealth.readPulsioximeter();
