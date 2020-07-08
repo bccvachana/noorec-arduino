@@ -33,6 +33,9 @@ struct DATA_STRUCTURE
 EasyTransfer ET;
 DATA_STRUCTURE data;
 
+bool isBloodPressure = false;
+bool isRateOxygen = false;
+
 void setup()
 {
     wirelessSPI.begin();
@@ -62,9 +65,20 @@ void loop()
     Serial.print(" , ");
     Serial.println(payload.oxygenValue);
 
-    if (payload.bloodPressureHighValue > 0 && payload.bloodPressureLowValue > 0)
+    if (payload.bloodPressureHighValue > 0 && payload.bloodPressureLowValue > 0 && !isBloodPressure)
     {
+        payload.rateValue = 0;
+        payload.oxygenValue = 0;
         wirelessSPI.write(&payload, sizeof(payload));
+        isBloodPressure = true;
+    }
+
+    if (payload.rateValue > 0 && payload.rateValue < 300 && payload.oxygenValue > 0 && payload.oxygenValue <= 100 && !isRateOxygen)
+    {
+        payload.bloodPressureHighValue = 0;
+        payload.bloodPressureLowValue = 0;
+        wirelessSPI.write(&payload, sizeof(payload));
+        isRateOxygen = true;
     }
 
     delay(1000);

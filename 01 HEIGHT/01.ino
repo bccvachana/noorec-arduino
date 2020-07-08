@@ -4,9 +4,7 @@
 #include <HCSR04.h>
 #include <NewPing.h>
 
-#define TRIGGER_PIN 6
-#define ECHO_PIN 5
-#define MAX_DISTANCE 250
+#define MAX_DISTANCE 300
 
 const uint8_t pinCE = 7;
 const uint8_t pinCSN = 8;
@@ -28,11 +26,11 @@ struct PayLoad
 };
 PayLoad payload;
 
-NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
+NewPing sonar(2, 3, MAX_DISTANCE);
 
 int time = 0;
 bool isHeight = false;
-int heightBefore, heightTemp, heightSum, height;
+int heightBefore, heightTempNew, heightTempOld, heightSum, height;
 
 void setup()
 {
@@ -43,36 +41,46 @@ void setup()
     wirelessSPI.stopListening();
 
     Serial.begin(9600);
-    heightBefore = 209;
+    heightBefore = 210;
 }
 
 void loop()
 {
-    // payload.heightValue = heightBefore -sonar.ping_cm();
+    // payload.heightValue = heightBefore - sonar.ping_cm();
     // wirelessSPI.write(&payload, sizeof(payload));
     // delay(1000);
     if (!isHeight)
     {
-        heightTemp = heightBefore - sonar.ping_cm();
-        Serial.println(heightTemp);
-        if (heightTemp != heightBefore && heightTemp > 120)
+        heightTempNew = heightBefore - sonar.ping_cm();
+
+        Serial.println(heightTempNew);
+
+        if (heightTempNew != heightBefore && heightTempNew > 120 && abs(heightTempNew - heightTempOld) < 5)
         {
+            heightSum += heightTempNew;
             time++;
-            heightSum += heightTemp;
         }
         else
         {
-            time = 0;
-            heightSum = 0;
+            if (heightTempNew != heightBefore)
+            {
+                heightSum = 0;
+                time = 0;
+            }
         }
-        if (time == 20)
+        if (time == 3)
         {
-            height = heightSum / 20;
-            time = 0;
-            heightSum = 0;
+            height = heightSum / 3;
             isHeight = true;
+            heightSum = 0;
+            time = 0;
         }
-        delay(100);
+        if (heightTempNew != heightBefore)
+        {
+            heightTempOld = heightTempNew;
+        }
+
+        delay(50);
     }
     else
     {

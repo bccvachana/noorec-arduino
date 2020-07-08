@@ -45,11 +45,14 @@ void setup()
 
 void loop()
 {
+  Serial.print(data.bloodPressureHighValue);
+  Serial.print(" , ");
+  Serial.println(data.bloodPressureLowValue);
   if (!rateOxygen)
   {
     data.rateValue = eHealth.getBPM();
     data.oxygenValue = eHealth.getOxygenSaturation();
-    if (data.rateValue > 0 && data.oxygenValue > 0)
+    if (data.rateValue > 0 && data.rateValue < 300 && data.oxygenValue > 0 && data.oxygenValue <= 100)
     {
       rateOxygen = true;
     }

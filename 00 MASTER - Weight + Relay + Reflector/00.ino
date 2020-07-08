@@ -196,19 +196,19 @@ void loop()
 	{
 		if (!isData)
 		{
-			if (analogRead(reflectorPin) < 250 && !isBloodPressure)
+			if (analogRead(reflectorPin) < 100 && !isBloodPressure)
 			{
 				time++;
 			}
-			if (analogRead(reflectorPin) > 250 && !isBloodPressure)
+			if (analogRead(reflectorPin) > 100 && !isBloodPressure)
 			{
 				time = 0;
 			}
-			if (analogRead(reflectorPin) < 250 && !isBloodPressure && time > 10)
+			if (analogRead(reflectorPin) < 100 && !isBloodPressure && time > 10)
 			{
 				isBloodPressure = true;
 			}
-			if (analogRead(reflectorPin) > 250 && isBloodPressure)
+			if (analogRead(reflectorPin) > 100 && isBloodPressure)
 			{
 				isBloodPressure = false;
 				isBloodPressureReceive = true;

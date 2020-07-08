@@ -68,39 +68,50 @@ void loop()
     }
     Serial.print("...");
     Serial.println(time);
+
+    if (time == 25)
+    {
+      isTemperature = true;
+      digitalWrite(4, LOW);
+      delay(200);
+      digitalWrite(4, HIGH);
+      delay(100);
+      digitalWrite(4, LOW);
+      delay(200);
+      digitalWrite(4, HIGH);
+      delay(100);
+      digitalWrite(4, LOW);
+      delay(200);
+      digitalWrite(4, HIGH);
+      delay(100);
+      digitalWrite(4, LOW);
+      delay(200);
+      digitalWrite(4, HIGH);
+      time = 0;
+    }
     delay(100);
   }
   else
   {
-    temperatureAvg = temperature / 25.00;
-    payload.temperatureValue = temperatureAvg;
-    Serial.print("...temperatureAvg...");
-    Serial.println(temperatureAvg);
-    wirelessSPI.write(&payload, sizeof(payload));
-    time = 0;
-    temperature = 0;
-    temperatureAvg = 0;
-    isTemperature = false;
-  }
-
-  if (time == 25)
-  {
-    isTemperature = true;
     digitalWrite(4, LOW);
-    delay(200);
-    digitalWrite(4, HIGH);
-    delay(100);
-    digitalWrite(4, LOW);
-    delay(200);
-    digitalWrite(4, HIGH);
-    delay(100);
-    digitalWrite(4, LOW);
-    delay(200);
-    digitalWrite(4, HIGH);
-    delay(100);
-    digitalWrite(4, LOW);
-    delay(200);
-    digitalWrite(4, HIGH);
-    time = 0;
+    if (time == 0)
+    {
+      temperatureAvg = temperature / 25.00;
+      payload.temperatureValue = temperatureAvg;
+      Serial.print("...temperatureAvg...");
+      Serial.println(temperatureAvg);
+      wirelessSPI.write(&payload, sizeof(payload));
+    }
+    else if (time == 15)
+    {
+      time = 0;
+      temperature = 0;
+      temperatureAvg = 0;
+      isTemperature = false;
+    }
+    else
+      Serial.println("...");
+    delay(1000);
+    time++;
   }
 }
